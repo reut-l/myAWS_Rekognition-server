@@ -3,7 +3,6 @@ const mongoose = require('mongoose');
 const Picture = require('./models/pictureModel.js');
 
 const rekognition = new AWS.Rekognition({ region: process.env.AWS_REGION });
-//const collectionName = 'my-rekognition-collection';
 
 const listCollections = async () => {
   return new Promise((resolve, reject) => {

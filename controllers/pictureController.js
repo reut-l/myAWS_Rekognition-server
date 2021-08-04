@@ -1,3 +1,6 @@
+const fs = require('fs');
+const path = require('path');
+const temp = require('temp');
 const multer = require('multer');
 const multerS3 = require('multer-s3-transform');
 const { v4: uuidv4 } = require('uuid');
@@ -31,6 +34,50 @@ const upload = () =>
       },
     }),
   });
+
+const getObjectBuf = async (imgId) => {
+  try {
+    const params = {
+      Bucket: process.env.AWS_BUCKET,
+      Key: imgId,
+    };
+
+    const data = await s3.getObject(params).promise();
+    return data.Body;
+  } catch (e) {
+    throw new Error(`Could not retrieve file from S3: ${e.message}`);
+  }
+};
+
+exports.getImage = async (req, res) => {
+  try {
+    const imgBuf = await getObjectBuf(req.params.imageId);
+
+    temp.track();
+
+    temp.open({ suffix: '.jpeg' }, (err, info) => {
+      if (err) throw err;
+
+      fs.write(info.fd, imgBuf, (err) => {
+        if (err) throw err;
+      });
+      fs.close(info.fd, (err) => {
+        if (err) throw err;
+
+        res.download(info.path, 'photo.jpeg', (err) => {
+          if (err) throw err;
+
+          temp.cleanup();
+        });
+      });
+    });
+  } catch (err) {
+    return res.status(500).json({
+      status: 'error',
+      message: 'Server Error, Please try again later!',
+    });
+  }
+};
 
 exports.upload = upload().single('filepond');
 
@@ -67,10 +114,10 @@ exports.savePicture = async (req, res) => {
     );
 
     return res.status(200).json({ success: true, data: 'Upload complete' });
-  } catch (e) {
+  } catch (err) {
     return res.status(500).json({
-      success: false,
-      data: e,
+      status: 'error',
+      message: 'Server Error, Please try again later!',
     });
   }
 };
@@ -90,10 +137,10 @@ exports.recogniseMe = async (req, res) => {
       success: true,
       data: result,
     });
-  } catch (error) {
+  } catch (err) {
     return res.status(500).json({
-      success: false,
-      data: 'No faces were recognised',
+      status: 'error',
+      message: 'Server Error, Please try again later!',
     });
   }
 };

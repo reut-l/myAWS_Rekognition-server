@@ -3,6 +3,8 @@ const pictureController = require('../controllers/pictureController');
 
 const router = express.Router();
 
+router.get('/image/:imageId', pictureController.getImage);
+
 router.post(
   '/collections/:id/upload',
   pictureController.upload,
