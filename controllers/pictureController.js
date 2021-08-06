@@ -79,41 +79,41 @@ exports.getImage = async (req, res) => {
   }
 };
 
-exports.upload = upload().single('filepond');
+exports.upload = upload().array('photos', 50);
 
 exports.savePicture = async (req, res) => {
   try {
-    const originalFile = req.file;
+    await Promise.all(
+      req.files.map(async (file) => {
+        const originalFile = file;
 
-    if (!originalFile) {
-      throw new Error('Unable to find original file!');
-    }
+        const { originalname, mimetype } = originalFile;
 
-    const { originalname, mimetype } = originalFile;
+        const picture = {
+          filename: originalname,
+          mimeType: mimetype,
+          bucket: originalFile.bucket,
+          contentType: originalFile.contentType,
+          location: originalFile.location,
+          etag: originalFile.etag,
+        };
 
-    const picture = {
-      filename: originalname,
-      mimeType: mimetype,
-      bucket: originalFile.bucket,
-      contentType: originalFile.contentType,
-      location: originalFile.location,
-      etag: originalFile.etag,
-    };
+        const result = await Picture.create(picture);
 
-    const result = await Picture.create(picture);
+        const collectionName = `${req.params.id}-rekognition-collection`;
 
-    const collectionName = `${req.params.id}-rekognition-collection`;
+        await faceRecognition.initialise(collectionName);
 
-    await faceRecognition.initialise(collectionName);
+        await faceRecognition.addImageToCollection(
+          originalFile.bucket,
+          result._id.toString(),
+          originalFile.key,
+          collectionName
+        );
 
-    await faceRecognition.addImageToCollection(
-      originalFile.bucket,
-      result._id.toString(),
-      originalFile.key,
-      collectionName
+        return res.status(200).json({ success: true, data: 'Upload complete' });
+      })
     );
-
-    return res.status(200).json({ success: true, data: 'Upload complete' });
   } catch (err) {
     return res.status(500).json({
       status: 'error',
