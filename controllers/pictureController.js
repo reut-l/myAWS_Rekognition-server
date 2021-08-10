@@ -133,8 +133,6 @@ exports.recogniseMe = async (req, res) => {
       collectionName
     );
 
-    console.log(result);
-
     return res.status(200).json({
       success: true,
       data: result,
