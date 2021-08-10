@@ -133,11 +133,19 @@ exports.recogniseMe = async (req, res) => {
       collectionName
     );
 
+    console.log(result);
+
     return res.status(200).json({
       success: true,
       data: result,
     });
   } catch (err) {
+    if (err.code === 'ResourceNotFoundException')
+      return res.status(200).json({
+        success: true,
+        message: 'Empty event',
+      });
+
     return res.status(500).json({
       status: 'error',
       message: 'Server Error, Please try again later!',

@@ -17,16 +17,6 @@ const app = express();
 
 app.enable('trust proxy');
 
-// app.use(cors());
-
-// app.use(
-//   cors({
-//     origin: 'http://localhost:3000/',
-//   })
-// );
-
-// app.options('*', cors());
-
 var whitelist = [process.env.CLIENT_URL];
 var corsOptions = {
   origin: function (origin, callback) {
